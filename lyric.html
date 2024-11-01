@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>Page Title</title>
+        <meta charset="utf-8"/>
+    </head>
+    <body>
+        <textarea></textarea>
+        <button class="cp">Copy</button>
+    </body>
+    <script src="./r/lyrics.js"></script>
+    <script>
+        
+        let ta=document.querySelector("textarea");
+        let btn=document.querySelector(".cp");
+        btn.onclick = () => {
+            if (!ta.value) {
+                alert("generate text first!")
+                return
+            }
+            ta.select()
+            ta.setSelectionRange(0, 999999)
+            document.execCommand("copy")
+            console.log("copied")
+            ta.blur()
+        }
+        
+let arr=a.split("\n");
+
+//for(let i of arr)console.log(i)
+function wa(arr){
+let res="";
+let h=150;
+for(let i=0;i<h;++i){
+    let s=arr[Math.floor(Math.random()*arr.length)];
+    s=s.replaceAll(/["',.*:$&#@()/?!;:\-\s]*/g,"");
+    res+=s;
+}
+ta.value=res;
+return res;
+}
+
+let res=wa(arr);
+let div=document.createElement("div");
+div.innerHTML=res.length+": "+res;
+document.body.appendChild(div);
+
+    </script>
+</html>
