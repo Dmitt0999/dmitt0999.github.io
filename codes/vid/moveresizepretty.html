@@ -1,0 +1,785 @@
+<!DOCTYPE html>
+<html>
+   <head>
+      <title>Page Title</title>
+      <meta charset="utf-8"/>
+      <meta name="viewport" content="width=device-width, initial-scale=1.0">
+      <style>
+         * {
+         margin: 0;
+         padding: 0;
+         }
+         body {
+         font-size: 18px;
+         }
+         .main {
+         width: 0vw;
+         height: 0vh;
+         position: relative;
+         }
+         .res {
+         transform: rotate(90deg) translateY(0%);
+         transform-origin: top left;
+         position: fixed;
+         top: 0;
+         right: 0;
+         }
+         .frame {
+         position: absolute;
+         top: 0;
+         left: 0;
+         opacity: 0;
+         /*  visibility:hidden;
+         will-change:visibility;*/
+         will-change: opacity;
+         }
+         .show {
+         /*visibility:visible;*/
+         opacity: 1;
+         }
+         .frame>span {}
+         .box {
+         position: absolute;
+         top: 0;
+         left: 0;
+         background: blue;
+         width: 0px;
+         height: 0px;
+         }
+      </style>
+   </head>
+   <body>
+      <div class="main">
+      <div class="res">
+         <div class="box"></box>
+         </div>
+      </div>
+   </body>
+   <script>
+      let gpixel = {};
+      let dtext={};
+   </script>
+   <script src="./load3.js" class="loadsc"></script>
+   <script src="./r/mtext.js" class="data"></script>
+   <!--<script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.10.0/p5.min.js"></script>-->
+   <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.11.1/p5.min.js"></script>
+   <script>
+      loadSc(gpixelL,gdur,setupAll);
+      let ttL=0;
+      let checkttL=0;
+      let ms=null;
+      let res = document.querySelector(".res");
+      let box = document.querySelector(".box");
+      let gkey = "";
+      let gcount = 0;
+      let gkeybef = "";
+      let gcountbef = 0;
+      let frameList = {};
+      let keyList = [];
+      let ginfo=[];
+      //  let auUrls=["./a.mp3","./b.mp3"];
+      
+      let auList = [];
+      let p5list = {};
+      let p5b = {};
+      let keycount = 0;
+      let gau = 0;
+      let gaubef = 0;
+      let gaub = false;
+      let auPlay=false;
+      let isResizing=false;
+      let WW=innerWidth;
+      let HH=innerHeight;
+      let isFullScreen=false;
+      let gtime=0;
+      //let maintext="";
+      let mainind=[];
+      
+      onresize=e=>{
+      	console.log("window resize to :"+innerWidth+":"+innerHeight);
+         isResizing=true;
+      }
+      function goFullScreen() {
+      	console.log("full screen");
+      isFullScreen=true;
+      const el = document.documentElement,
+        rfs = el.requestFullScreen
+          || el.webkitRequestFullScreen
+          || el.mozRequestFullScreen
+          || el.msRequestFullscreen
+      
+      rfs.call(el)
+      }
+       
+      for(let i=0;i<W*H;++i){
+      	let mt="HDKSKOWUHRBNCMZJWOUEUOWBBSLGHVCBKAH8372994783";
+      	//maintext+=mt[Math.floor(Math.random()*mt.length)];
+         let rn="0192837465";
+          let n=rn[Math.floor(Math.random()*rn.length)];
+          mainind.push(n);
+      }
+      
+      let gpx = 0;
+      let setupb = false;
+      let wtop5 = new Worker("wtop5.js");
+      let mtouch = {
+        xb: 0,
+        yb: 0,
+        x: 0,
+        y: 0,
+        nx: 0,
+        ny: 0,
+        b:false
+      }
+      
+      
+      function auOnPlay(e){
+      	auPlay=true;
+      }
+      
+      function auOnPause(e){
+      	auPlay=false;
+      }
+      
+      function playAu(a,b){
+      	if(a.paused&&!auPlay){
+      	      b.currentTime=0;
+                b.play();
+         }
+      }
+      
+      function pauseAu(a){
+      	if(!a.paused&&auPlay){
+      	      
+                a.pause();
+                a.currentTime=0;
+         }
+      }
+      
+      
+      
+      function reskey() {
+        let ind=mtouch.ny*W+mtouch.nx;
+       let cind=mainind[ind];
+       console.log("ind is "+cind);
+       if(cind>=keyList.length)return;
+        keycount = mainind[ind];
+        gkey = keyList[keycount];
+        gcount = 0;
+        //frameList[gkeybef][gcountbef].classList.remove("show");
+        gkeybef = gkey;
+        gcountbef = gcount;
+        gau = keycount;
+        auG();
+      }
+      
+      function fmag(a) {
+        let x = a.x - a.xb;
+        let y = a.y - a.yb;
+        return Math.sqrt(x * x + y * y);
+      }
+      /*main.addEventListener("touchstart",e=>{
+          let t=e.touches[0];
+          mtouch.xb=t.clientX;
+          mtouch.yb=t.clientY;
+      })*/
+      function findNear(x, y) {
+        let rw = innerHeight;
+        let rh = innerWidth;
+        let px=rw/W;
+      //    px=12;
+        x = x / px;
+        y = y / px;
+        x = Math.round(x);
+        y = Math.round(y);
+        mtouch.nx = x;
+        mtouch.ny = y;
+        mtouch.b=true;
+        let ind=y*W+x;
+        console.log(maintext[ind]+":"+x+","+y);
+      }
+      let ftm= e => {
+        let t = e.touches[0];
+        let r = e.target.getBoundingClientRect();
+        let y = innerHeight-t.clientX+r.left;
+        let x = t.clientY - r.top;
+        mtouch.x = x;
+        mtouch.y = y;
+        let m = fmag(mtouch);
+        let dx = mtouch.x - mtouch.xb;
+        let dy = mtouch.y - mtouch.yb;
+        mtouch.xb = mtouch.x;
+        mtouch.yb = mtouch.y;
+        dx *= .1;
+        dy *= .1;
+        let cc = getComputedStyle(box);
+        let boxx = parseInt(cc.getPropertyValue("left"));
+        let boxy = parseInt(cc.getPropertyValue("top"));
+       // console.log("b:"+boxx+","+boxy);
+        boxx -= dy;
+        boxy += dx;
+        //console.log(boxx)
+        box.style.left = boxx + "px";
+        box.style.top = boxy + "px";
+        findNear(x,y);
+      }
+      let ftc= e => {
+        console.log("clicked");
+       // if(!isFullScreen)goFullScreen();
+      //    let x = mtouch.nx;
+      //     let y = mtouch.ny;
+        let t = e;
+        let r = e.target.getBoundingClientRect();
+        
+        let rw = innerHeight;
+        let rh = innerWidth;
+        let y = rh-t.clientX+r.left;
+        let x = t.clientY - r.top;
+        y-=(rw/W);
+        mtouch.x=x;
+        mtouch.y=y;
+        findNear(x,y);
+       
+        reskey();
+      }
+      let fts= e => {
+        let t = e.touches[0];
+        let r = e.target.getBoundingClientRect();
+        //  let rh=r.top-r.bottom;
+        //     let rw=r.right-r.left;
+        let rw = innerHeight;
+        let rh = innerWidth;
+        let y = rh-t.clientX+r.left;
+        let x = t.clientY - r.top;
+        
+        console.log("bef:"+x+":"+y);
+        y-=(rw/W);
+           console.log("aft:"+x+":"+y);
+        let px = document.body.style.fontSize;
+        px = parseInt(px);
+        let npx = px + 3;
+        mtouch.xb = x;
+        mtouch.yb = y;
+       
+        /*x=x/rw;
+             y=y/rh;
+             x=x*W;
+             y=y*H;
+             x=Math.floor(x);
+             y=Math.floor(y);
+             let t1=document.querySelector("span[data-xy='x"+x+"y"+y+"']");
+             let ind=t1.dataset.i;
+             let t2=document.querySelectorAll("span[data-i='"+ind+"']");
+           //  for(let el of t2)el.style.fontSize=npx+"px";*/
+        //   alert(r.left+":"+r.top);
+        findNear(x, y);
+      }
+      
+      let fte=e=>{
+      mtouch.b=false;
+      }
+      
+      function setPx(w, h) {
+        let ww = innerWidth;
+        let wh = innerHeight;
+        let pxh = ww / h;
+        // pxh-=3;
+        document.body.style.fontSize = pxh + "px";
+        document.body.style.lineHeight = pxh + "px";
+        document.body.style.boxSizng = "border-box";
+      }
+      
+      function auG() {
+        if (!gaub) return;
+      //   if(gaubef!=gau){
+              //pauseAu(auList[gaubef]);
+      //   }
+     // playAu(auList[gaubef],auList[gau]);
+      //     auList[gau].currentTime=0;
+      //  auList[gau].play();
+       auList[gaubef].pause();
+       auList[gaubef].currentTime=0;
+    	setTimeout(()=>{
+      auList[gau].play();
+        gaubef = gau;
+        },10);
+      }
+      
+      
+      function animG() {
+        gkeybef = gkey;
+        gcountbef = gcount;
+        if (gcount >= frameList[gkey].length) {
+          gcount = 0;
+          //return;
+        }
+        if (gcount != 0) frameList[gkey][gcount - 1].classList.remove("show");
+        else frameList[gkey][frameList[gkey].length - 1].classList.remove("show");
+        frameList[gkey][gcount].classList.add("show");
+        gcount++;
+        
+        setTimeout(() => requestAnimationFrame(animG), 0);
+      }
+      
+      
+      wtop5.onmessage = e => {
+        let d = e.data[0];
+        let i = e.data[1];
+        let c = e.data[2];
+        p5list[i][c] = d;
+        
+        checkttL++;
+      //  console.log("get data from:" + c);
+      //  console.log("data is " + d.length);
+        
+        if (checkttL==ttL) {
+          setupb = true;
+          console.log("all daya received");
+          console.log(p5list[i]);
+          new p5(ms);
+        }
+      }
+      
+      function show(d,i,c){
+        	 let cc=c;
+              let dp=document.createElement("div");
+              dp.classList.add("frame");
+              dp.classList.add("frame"+cc);
+      
+              frameList[i].push(dp);
+             
+             wtop5.postMessage([d[cc],i,c]);
+              cc++;
+             // return;
+             if(cc>=dtext[i].length){
+             	c=0;
+             return;
+             }
+             show(dtext[i],i,cc);
+        }
+      
+      function setupTxt() {
+        let c = 0;
+        let rcc = 0;
+      //   ttL=Object.keys(dtext).length*dtext[Object.keys(dtext)[0]].length;
+       gaub=(auUrls.length>0)?true:false;
+      for (let i of scList) {
+         console.log(i);
+         keyList.push(Object.keys(gpixel)[rcc]);
+          let s=i.dataset.s;
+          let e=i.dataset.e;
+          let o=i.dataset.ind;
+          let oind=i.dataset.oind;
+          for(let k=s;k<e;++k){
+          	mainind[k]=o;
+          }
+          ginfo[o]=ginfoT[oind];
+              if(gaub){
+            auList[o]=new Audio("./m/"+auUrls[oind]);
+            auList[o].loop=true;
+            auList[o].onplaying=auOnPlay;
+            auList[o].onpause=auOnPause;
+            }
+          //gpixel[keyList[rcc]]=Array.from(gpixel[keyList[rcc]]);
+         rcc++;
+        }
+        
+      
+      /*  for (let i of auUrls) {
+          gaub = true;
+          auList.push(new Audio(i));
+        }
+        setPx(W, H);*/
+        
+      }
+      
+      
+      function drawText(p, w, h, px) {
+        let x = 0;
+        let y = 0;
+        let ox = 0;
+        let oy = px;
+        let n="hhdkkshdhufinsnjaouieoeimnzbcnakkr";
+        for (let i = 0; i < h; ++i) {
+          y = i * px + oy;
+          for (let j = 0; j < w; ++j) {
+            x = j * px + ox;
+            let ind = i * w + j;
+      
+       
+            p.fill(p.color(255,0,0));
+            let cn=n[Math.floor(Math.random()*n.length)];
+            cn="H";
+            p.text(cn,x,y);
+          }
+        }
+      }
+      
+      function drawTextInd(p, w, h, px,maintext,mainind) {
+        let x = 0;
+        let y = 0;
+        let ox = 0;
+        let oy = px;
+        let n="hhdkkshdhufinsnjaouieoeimnzbcnakkr";
+        for (let i = 0; i < h; ++i) {
+          y = i * px + oy;
+          for (let j = 0; j < w; ++j) {
+            x = j * px + ox;
+            let ind = i * w + j;
+      
+       
+            p.fill(p.color(255,0,0));
+            let cn=n[Math.floor(Math.random()*n.length)];
+            cn=maintext[ind]
+            //cn="H";
+            p.text(cn,x,y);
+           
+          }
+        }
+      }
+      
+      
+      
+      function drawBuffer(p, res, w, h, px) {
+        let x = 0;
+        let y = 0;
+        let ox = 0;
+        let oy = 0;
+        for (let i = 0; i < h; ++i) {
+          y = i * px + oy;
+          for (let j = 0; j < w; ++j) {
+            x = j * px + ox;
+            let ind = i * w + j;
+        //    console.log(ind);
+            let r = res[ind];
+           // console.log(r);
+            let tc=r.split("-");
+            p.fill(p.color(tc[0],tc[1],tc[2]));
+            p.square(x, y, px);
+          }
+        }
+      }
+      
+      // Note: A "uniform" is a global variable within a shader program.
+      
+      // Create a string with the vertex shader program.
+      // The vertex shader is called for each vertex.
+      let vertSrc = `
+      attribute vec3 aPosition;
+      varying vec2 pos;
+      
+      void main() {
+      pos=aPosition.xy;
+      pos.xy+=1.;
+      pos.xy/=2.;
+      //  pos.x*=360.;
+      //  pos.y*=720.;
+      gl_Position = vec4(aPosition, 1); // Flip Y for webgl
+      }
+      `;
+      
+      let fragSrc = `
+      precision highp float;
+      varying vec2 pos;
+      uniform sampler2D s;
+      uniform sampler2D t;
+      uniform sampler2D obd;
+      uniform float gt;
+      //float w=360.*2.;
+      //float h=720.*2.;
+      uniform vec2 wh;
+      uniform vec2 iwh;
+      float px=wh.x/iwh.y;
+      
+      void main() {
+      vec2 op=pos;
+      //op.x/=360.;
+      // op.y/=720.;
+      op.y=1.-op.y;
+       vec4 tt=texture2D(t,op);
+       if(tt.x<.7)discard;
+      
+      float y=wh.x-pos.x*wh.x;
+      float x=wh.y-pos.y*wh.y;
+      x/=px;
+      y/=px;
+      x=floor(x);
+      y=floor(y);
+      x/=iwh.x;
+      y/=iwh.y;
+      vec4 xy=texture2D(s,vec2(x,y));
+     // vec4 tt=texture2D(t,op);
+      vec4 obdt=texture2D(obd,op);
+      
+      vec4 col=vec4(0,0,0,1);
+      float aa=1.;
+      float k=gt*gt/3.2+7.*gt/4.;
+      k=k/gt*.5;
+      k=1.;
+      if(tt.x>=.7){
+      col=vec4(xy.xyz*.7+col.xyz*.3,1);
+      
+      }
+      
+      
+      
+      if(obdt.x>.5){
+         aa=1.0;
+         col=vec4(1.*k,1./k,1,1);
+         }
+    //  gl_FragColor=vec4(obdt.xyz*obdt.a+col.xyz*(1.-obdt.a),aa);
+       gl_FragColor=col;
+      }
+      `;
+      
+      
+      let vertSrcs = `
+      attribute vec3 aPosition;
+      varying vec2 pos;
+      
+      void main() {
+      pos=aPosition.xy;
+      pos.xy+=1.;
+      pos.xy/=2.;
+      gl_Position = vec4(aPosition, 1); // Flip Y for webgl
+      }
+      `;
+      
+      let fragSrcs = `
+      precision highp float;
+      varying vec2 pos;
+      uniform sampler2D st;
+      uniform vec2 mpos;
+      //float w=360.*2.;
+      //float h=720.*2.;
+      uniform vec2 wh;
+      float px=h/60.;
+      
+      void main() {
+      vec2 cpos=mpos;
+      cpos.x=wh.y-mpos.y;
+      cpos.y=wh.x-mpos.x;
+      cpos.x/=px;
+      cpos.y/=px;
+      cpos.x=floor(cpos.x);
+      cpos.y=floor(cpos.y);
+      cpos.x/=60.;
+      cpos.y/=30;
+      vec4 res=texture2D(st,cpos);
+      gl_FragColor=vec4(1,1,0,1);
+      }
+      `;
+      
+      let cgp=(p,w,h)=>{
+      let ob=p.createGraphics(w,h);
+      ob.pixelDensity(1);
+      return ob;
+      }
+      
+      let cfb=(p,w,h)=>{
+      let ob=p.createFramebuffer({width:w,height:h,textureFiltering:p.NEAREST,antialias:false,density:1});
+      //	ob.pixelDensity(1);
+      return ob;
+      }
+      
+      let shaderProgram=null; 
+      let shds=null;
+      let tex=null;
+      let buffd=null;
+      let obd=null;
+      let ob=null;
+      let buffc=null;
+      let obw=0;
+      let obh=0;
+      let mcvs=null;
+      
+      let font1=null;
+      let font2=null;
+      
+      let skey=-1;
+      ms = function(p) {
+        p.setup = () => {
+          p.createCanvas(innerWidth,innerHeight,p.WEBGL);       
+      //p.frameRate(27);
+          mcvs=document.querySelector("canvas");
+      mcvs.addEventListener("touchstart",fts);
+      mcvs.addEventListener("touchmove",ftm);
+      mcvs.addEventListener("touchend",fte);
+      mcvs.addEventListener("click",ftc);
+      
+      
+          shaderProgram = p.createShader(vertSrc, fragSrc);
+          shds = p.createShader(vertSrcs,fragSrcs);
+      //    p.noStroke();
+          tex=p.createImage(W,H);
+         buff=p.createFramebuffer({width:innerWidth,height:innerHeight,textureFiltering:p.NEAREST,antialias:false,density:1});
+         
+          
+         buffc=p.createFramebuffer({width:60,height:30,textureFiltering:p.NEAREST,antialias:false,density:1});
+         
+          obw=WW*2;
+          obh=HH*2;
+          ob=p.createGraphics(obw,obh);
+          ob.pixelDensity(1);
+         // ob.setAttributes("antialias",false);
+          
+      //     font1=ob.loadFont("./fonts/Nunito-Regular.ttf");
+          obd=p.createGraphics(obw,obh);
+          obd.pixelDensity(1);
+        //  obd.setAttributes("antialias",false);
+          
+          /*obd.loadPixels();
+          for(let i=0;i<gpixel[gkey][gcount].length;i+=4){
+          obd.pixels[i]=255;
+          obd.pixels[i+1]=0;
+          obd.pixels[i+2]=0;
+          obd.pixels[i+3]=255;
+          }
+          obd.updatePixels();*/
+          ob.angleMode(p.DEGREES);
+          
+          ob.translate(obw, 0)
+          ob.rotate(90)
+       
+           let px=obw/H;
+           //ob.textFont(font1);
+            ob.textSize(px);
+         //   alert(ob.textLeading());
+            drawTextInd(ob, W, H,px,maintext,mainind);
+          
+          ob.rotate(-90)
+          ob.translate(-obw,0)
+          
+      //   font2=obd.loadFont("./fonts/Nunito-Regular.ttf");
+        }
+        p.draw = () => {
+         if(!setupb)return;
+          p.background(0);     
+      
+       if(isResizing){
+       WW=innerWidth;
+       HH=innerHeight;
+       p.resizeCanvas(WW,HH);
+        obw=WW*2;
+        obh=HH*2;
+         ob=cgp(p,obw,obh);
+         obd=cgp(p,obw,obh);
+         ob.angleMode(p.DEGREES);
+          
+         ob.translate(obw, 0)
+         ob.rotate(90)
+       
+         let px=obw/H;
+         ob.textSize(px);
+         drawTextInd(ob, W, H,px,maintext,mainind);
+          
+          ob.rotate(-90);
+          ob.translate(-obw,0);
+          
+          let csc=scList[keycount];
+          let s=csc.dataset.s;
+          let e=csc.dataset.e;
+          px=obw/H;
+          obd.background(0);
+          obd.angleMode(p.DEGREES);
+          obd.translate(obw, 0)
+          obd.rotate(90)
+          obd.textStyle(p.BOLD);
+          obd.textSize(px);
+          for(let u=s;u<e;++u){
+          	let cx=u%W;
+              let cy=Math.floor(u/W);
+              cx*=px;
+              cy*=px;
+              cy+=px;
+              obd.fill(255);
+              obd.text(maintext[u],cx,cy);
+          }
+          
+          obd.rotate(-90);
+          obd.translate(-obw,0);
+          isResizing=false;
+       }
+          
+          
+ 
+       if(setupb&&skey!=keycount){
+          	let csc=scList[keycount];
+          let s=csc.dataset.s;
+          let e=csc.dataset.e;
+          let px=obw/H;
+          obd.background(0);
+          obd.angleMode(p.DEGREES);
+          obd.translate(obw, 0);
+          obd.rotate(90);
+          obd.textStyle(p.BOLD);
+          obd.textSize(px);
+          for(let u=s;u<e;++u){
+          	let cx=u%W;
+              let cy=Math.floor(u/W);
+              cx*=px;
+              cy*=px;
+              cy+=px;
+              obd.fill(255);
+              obd.text(maintext[u],cx,cy);
+          }
+          
+       
+           
+          
+          obd.rotate(-90);
+          obd.translate(-obw,0);
+          skey=keycount;
+          }
+        
+          
+          buffc.loadPixels();
+          for(let i=0;i<gpixel[gkey][gcount].length;++i){
+          buffc.pixels[i]=parseInt(gpixel[gkey][gcount][i]);
+          }
+          buffc.updatePixels();
+          
+          
+          
+          p.shader(shaderProgram);
+        
+         shaderProgram.setUniform("s",buffc);
+         shaderProgram.setUniform("t",ob);
+         shaderProgram.setUniform("obd",obd);
+         shaderProgram.setUniform("wh",[obw,obh]);
+         shaderProgram.setUniform("iwh",[W,H]);
+         shaderProgram.setUniform("gt",gtime);
+         
+         
+          p.beginShape();
+          p.vertex(-1,-1,0);
+          p.vertex(1,-1,0);
+          p.vertex(1,1,0);
+          p.vertex(-1,1,0);
+          p.endShape(p.CLOSE);
+          
+          
+          gcount++;
+          if(gcount>=gpixel[gkey].length)gcount=0;
+          gtime+=.3;
+        }
+      }
+      new p5(ms)
+      
+      
+      
+      function setupAll(){
+    	console.log("setuping");
+        for(let n in gpixel) console.log(n);
+        setupTxt();
+        gkey = keyList[keycount];
+        gkeybef = gkey;
+        gcountbef = gcount;
+        gau = keycount;
+        gaubef=gau;
+        setupb=true;
+      }
+      
+      
+   </script>
+</html>

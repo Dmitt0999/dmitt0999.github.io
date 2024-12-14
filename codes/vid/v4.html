@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>Page Title</title>
+<meta charset="utf-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <style>
+            video,canvas {
+  max-width: 100%
+}
+        </style>
+    </head>
+    <body>
+        <button class="stb">start</button>
+        <input type="text" class="st" placeholder="start"><br>
+        	  <input type="text" class="et" placeholder="end"><br>
+        <button class="dl">Download</button>
+<input type="text" class="vname" placeholder="video name"/><br>
+<button class="getv">Get Video</button>
+<select disabled>
+</select>
+<canvas></canvas>
+<video autoplay controls class="vd">
+</video>
+<textarea class="res" placeholder="res"></textarea>
+    </body>
+<script src="./load3.js"></script>
+    <script>
+    
+    const SKIP=1;
+    let imgArr=[];
+let vname="omg";
+let ext=".v";
+    let op={resizeWidth:W,resizeHeight:H};
+        
+        let url="https://ww297q.cloudatacdn.com/u5kj6ge4xtclsdgge5j66oa7lqqzjmtr3f6xhddjzvxdco2of3one74fyqrq/lvefyfc1rq~YTBhKI9niK?token=zolg5ty1xsoimldtru9od3yt&expiry=1730112259574";
+        
+        
+        url="http://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4";
+        
+      let urlpath="./v/";
+        url=urlpath+vname+ext;
+        function download(filename, text) {
+  var element = document.createElement('a');
+  element.setAttribute('href', 'data:text/plain;charset=utf-8,' + encodeURIComponent(text));
+  element.setAttribute('download', filename);
+
+  element.style.display = 'none';
+  document.body.appendChild(element);
+
+  element.click();
+
+  document.body.removeChild(element);
+}
+
+// Start file download.
+//download("hello.txt","This is the content of my file :)");
+        
+        let frames = [];
+const button = document.querySelector(".stb");
+const dlb = document.querySelector(".dl");
+const stb = document.querySelector(".st");
+const etb = document.querySelector(".et");
+const select = document.querySelector("select");
+const canvas = document.querySelector("canvas");
+const ta = document.querySelector(".res");
+const getvb = document.querySelector(".getv");
+const vnamee = document.querySelector(".vname");
+const ctx = canvas.getContext("2d");
+const vd = document.querySelector(".vd");
+let wdl=new Worker("wdl2.js");
+let st=82;
+let et=83;
+let stopped=true;
+
+
+let getvname=e=>{
+if(vnamee.value!=""){
+vname=vnamee.value;
+url=urlpath+vname+ext;
+}
+}
+
+getvb.onclick=getvname;
+function rn(l=6){	
+	let n="";
+	let r="hrjsi783847jjfnd99271674ncmjeoor";
+	for(let i=0;i<l;++i){
+		n+=r[Math.floor(Math.random()*r.length)];
+	}
+	return n;
+}
+
+dlb.onclick=e=>{
+//	let n=rn();
+	wdl.postMessage([imgArr,W,H]);
+//	let ft="gdata['"+n+"']="+JSON.stringify(imgArr);
+//	download("a_"+n+".js",ft);
+}
+
+wdl.onmessage=e=>{
+	let d=e.data;
+	let n=rn();
+	let ft="gpixel['"+n+"']="+JSON.stringify(e.data);
+	download("c"+n+".js",ft);
+	}
+
+button.onclick = async(evt) => {
+  getvname(null);
+  stopped=!stopped;
+  if(stopped)return;
+  imgArr=[];
+  frames=[];
+  select.innerHTML="";
+  if (window.MediaStreamTrackProcessor) {
+    
+    const track = await getVideoTrack();
+    const processor = new MediaStreamTrackProcessor(track);
+    const reader = processor.readable.getReader();
+    readChunk();
+
+    function readChunk() {
+      reader.read().then(async({ done, value }) => {
+        if (value) {
+          const bitmap = await createImageBitmap(value,op);
+          const index = frames.length;
+          frames.push(bitmap);
+       select.append(new Option("Frame #" + (index + 1), index));
+        //drawToCvs();
+          value.close();
+        }
+        if (!done && !stopped) {
+          readChunk();
+        } else {
+        	for(let i=0;i<frames.length;i+=SKIP){
+        	  drawToCvs(i);
+        }
+         let ft="let gdata="+JSON.stringify(imgArr);
+         //alert(imgArr.length);
+        // download("test.js",ft);
+          select.disabled = false;
+          button.textContent="start";
+          vd.pause();
+        }
+      });
+    }
+    //button.onclick = (evt) => stopped = true;
+    button.textContent = "stop";
+   // ta.value=JSON.stringify(imgArr[0][0]);
+    } else {
+    console.error("your browser doesn't support this API yet");
+  }
+};
+
+
+function drawToCvs(c){
+	const mm=c;
+	const frame = frames[mm];
+  imgArr[mm]=[];
+  canvas.width = frame.width;
+  canvas.height = frame.height;
+  ctx.drawImage(frame, 0, 0);
+  let imgd=ctx.getImageData(0,0,canvas.width,canvas.height);
+  for(let i=0;i<canvas.height;++i){
+  	    imgArr[mm][i]=[];
+      for(let j=0;j<canvas.width;++j){
+          let ind=(i*canvas.width+j)*4;
+          imgArr[mm][i].push([
+             imgd.data[ind],
+             imgd.data[ind+1],
+             imgd.data[ind+2],
+           //  imgd.data[ind+3]
+          ]);
+      }
+  }
+   //alert("done");
+	}
+
+select.onchange = (evt) => {
+  const frame = frames[select.value];
+  //imgArr[select.value]=[];
+  canvas.width = frame.width;
+  canvas.height = frame.height;
+  ctx.drawImage(frame, 0, 0);
+/*  let imgd=canvas.getImageData(0,0,canvas.width,canvas.height);
+  for(let i=0;i<canvas.height;++i){
+      for(let j=0;j<canvas.width;++j){
+          let ind=i*w+j*4;
+          imgArr[select.value].push([
+             imgd.data[ind],
+             imgd.data[ind+1],
+             imgd.data[ind+2],
+             imgd.data[ind+3]
+          ]);
+      }
+  }*/
+};
+
+async function getVideoTrack() {
+  if(stb.value){
+     let x=stb.value;
+     if(x.match(/,/g,x)==null)st=stb.value;
+     else {
+     	let y=x.split(",");
+         st=parseFloat(y[0])*60+parseFloat(y[1]);
+     }
+    }
+  if(etb.value){
+   let x=etb.value;
+     if(x.match(/,/g,x)==null)et=etb.value;
+     else {
+     	let y=x.split(",");
+         et=parseFloat(y[0])*60+parseFloat(y[1]);
+     }
+  }
+  const video = vd;
+  video.crossOrigin = "anonymous";
+  video.src = url;
+ // document.body.append(video);
+  video.currentTime=st;
+  console.log(video.currentTime);
+  await video.play();
+  
+  
+  const [track] = video.captureStream().getVideoTracks();
+  setTimeout(()=>{video.pause();track.stop()},(et-st)*1000);
+  video.onended = (evt) => track.stop();
+  return track;
+}   
+
+
+
+
+
+
+    </script>
+</html>
